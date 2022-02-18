@@ -14,13 +14,13 @@ public abstract class AbstractSecCookieMapper<T> implements SecCookieMapper<T> {
 
 	private final @NonNull Function<byte @NonNull [], T> deserializer;
 
-	protected abstract byte @NonNull [] decryptAndValidate(byte @NonNull [] data);
+	protected abstract byte @NonNull [] decryptAndValidate(byte @NonNull [] secCookie);
 
-	protected abstract byte @NonNull [] encryptAndSign(byte @NonNull [] apply);
+	protected abstract byte @NonNull [] encryptAndSign(byte @NonNull [] serialized);
 
 	@Override
-	public T readValue(@Nonnull byte @NonNull [] data) {
-		return deserializer.apply(decryptAndValidate(data));
+	public T readValue(@Nonnull byte @NonNull [] secCookie) {
+		return deserializer.apply(decryptAndValidate(secCookie));
 	}
 
 	@Override
