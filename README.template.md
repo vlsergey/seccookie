@@ -14,7 +14,7 @@ Java library for security cookies, client-side pieces of data protected from rea
 
 ```groovy
 dependencies {
-  implementation group: 'com.github.vlsergey', name: 'seccookie', version: '${version}'
+  implementation group: 'io.github.vlsergey', name: 'seccookie', version: '${version}'
 }
 ```
 
@@ -22,7 +22,7 @@ dependencies {
 
 ```xml
   <dependency>
-    <groupId>com.github.vlsergey</groupId>
+    <groupId>io.github.vlsergey</groupId>
     <artifactId>seccookie</artifactId>
     <version>${version}</version>
   </dependency>
