@@ -44,3 +44,47 @@ try {
   throw RuntimeException("Supplied data is invalid", exc);
 }
 ```
+
+## Key rolling technique
+For long living and secure-oriented systems it may be required to provide a "key rolling" support where keys can be replaced in runtime without problems with existing user data. `SimpleSecCookieMapper` supports it via providing list of keys that can be used to try and decrypt secure cookie. All keys will be used in provided order and only after all of them tried single success result will be returned. I.e. there is no "fast first success" shortcut to prevent timing attacks (but at the cost of exception creation in JVM).
+
+To provide multiple decryption key just set `decryptionKeysSupplier` property in `SimpleSecCookieMapper.Settings`:
+
+```java
+SimpleSecCookieMapper.Settings settings = new SimpleSecCookieMapper.Settings(
+   serializer, deserializer, secretKeySupplier);
+settings.setDecryptionKeysSupplier = () -> Arrays.asList( secretKey1, secretKey2, secretKey3, ... );
+```
+
+There are 2 rules when changing keys configuration:
+* Encrypt with newest key.
+* Have all old keys in decryption keys list until keys/cookie TTL expired.
+
+Assume we have configuration alike following:
+
+```yaml
+encryptWith: secretKey2
+decryptWith:
+  - secretKey1
+  - secretKey2
+```
+
+`secretKey1` was used long time before. So we removing it from the list and add new `secretKey3` to decryption keys list:
+
+```yaml
+encryptWith: secretKey2
+decryptWith:
+  - secretKey2
+  - secretKey3
+```
+
+After that (or at the same time -- it's safe to do it simultaneously) one need to replace encryption key with new one:
+
+```yaml
+encryptWith: secretKey3
+decryptWith:
+  - secretKey2
+  - secretKey3
+```
+
+Just make sure that encryption key is always somewhere in the list of decryption keys.

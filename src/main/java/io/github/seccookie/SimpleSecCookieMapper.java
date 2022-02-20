@@ -1,9 +1,12 @@
 package io.github.seccookie;
 
 import static java.lang.System.arraycopy;
+import static java.util.Collections.singletonList;
 
 import java.security.SecureRandom;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -48,7 +51,16 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 		 */
 		public int gcmTagLengthBits = 96;
 
-		private @NonNull Supplier<@NonNull SecretKey> keySupplier;
+		private @NonNull Supplier<@NonNull SecretKey> encryptionKeySupplier;
+
+		/**
+		 * Provides a collection of keys that will be used to try to decrypt secure
+		 * cookie. All keys will be used (no "first success" policy to reduce timing
+		 * attacks potential), but only success decryption result will be returned.
+		 * Leave this field <code>null</code> to use only single key from
+		 * {@link #getEncryptionKeySupplier()}
+		 */
+		private Supplier<@NonNull List<@NonNull SecretKey>> decryptionKeysSupplier = null;
 
 		private @NonNull SecureRandom secureRandom = new SecureRandom();
 
@@ -60,7 +72,8 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 			super();
 			this.serializer = serializer;
 			this.deserializer = deserializer;
-			this.keySupplier = keySupplier;
+			this.encryptionKeySupplier = keySupplier;
+			this.decryptionKeysSupplier = null;
 		}
 
 	}
@@ -71,7 +84,9 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 
 	private final int gcmTagLengthBits;
 
-	private final @NonNull Supplier<@NonNull SecretKey> keySupplier;
+	private final @NonNull Supplier<@NonNull SecretKey> encryptionKeySupplier;
+
+	private final @NonNull Supplier<@NonNull List<@NonNull SecretKey>> decryptionKeysSupplier;
 
 	private final @NonNull SecureRandom secureRandom;
 
@@ -80,7 +95,9 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 
 		this.gcmCipherSupplier = settings.gcmCipherSupplier;
 		this.gcmTagLengthBits = settings.gcmTagLengthBits;
-		this.keySupplier = settings.keySupplier;
+		this.encryptionKeySupplier = settings.encryptionKeySupplier;
+		this.decryptionKeysSupplier = settings.decryptionKeysSupplier != null ? settings.decryptionKeysSupplier
+				: () -> singletonList(settings.encryptionKeySupplier.get());
 		this.secureRandom = settings.secureRandom;
 	}
 
@@ -89,7 +106,7 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 	@SneakyThrows
 	protected byte @NonNull [] encryptAndSign(@Nonnull byte @NonNull [] serialized) {
 		final @NonNull Cipher cipher = gcmCipherSupplier.get();
-		final @NonNull SecretKey secretKey = keySupplier.get();
+		final @NonNull SecretKey secretKey = encryptionKeySupplier.get();
 
 		final byte[] iv = new byte[IV_LENGTH_BYTES];
 		secureRandom.nextBytes(iv);
@@ -113,19 +130,39 @@ public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 		}
 
 		final @NonNull Cipher cipher = gcmCipherSupplier.get();
-		final @NonNull SecretKey secretKey = keySupplier.get();
+		final GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(gcmTagLengthBits, secCookie, 0, IV_LENGTH_BYTES);
 
-		cipher.init(Cipher.DECRYPT_MODE, secretKey,
-				new GCMParameterSpec(gcmTagLengthBits, secCookie, 0, IV_LENGTH_BYTES));
-
-		final byte[] plainText;
-		try {
-			plainText = cipher.doFinal(secCookie, IV_LENGTH_BYTES, secCookie.length - IV_LENGTH_BYTES);
-		} catch (Exception exc) {
-			throw new WrongSecureCookieException(exc);
+		final @NonNull List<@NonNull SecretKey> decryptKeys = this.decryptionKeysSupplier.get();
+		if (decryptKeys.isEmpty()) {
+			throw new IllegalStateException("No decryption keys provided");
 		}
 
-		return plainText;
+		if (decryptKeys.size() == 1) {
+			cipher.init(Cipher.DECRYPT_MODE, decryptKeys.get(0), gcmParameterSpec);
+			try {
+				return cipher.doFinal(secCookie, IV_LENGTH_BYTES, secCookie.length - IV_LENGTH_BYTES);
+			} catch (Exception exc) {
+				throw new WrongSecureCookieException(exc);
+			}
+		}
+
+		byte[] result = null;
+		final @NonNull List<Throwable> suppressedExceptions = new ArrayList<>(decryptKeys.size() - 1);
+		for (final @NonNull SecretKey decryptKey : decryptKeys) {
+			cipher.init(Cipher.DECRYPT_MODE, decryptKey, gcmParameterSpec);
+			try {
+				result = cipher.doFinal(secCookie, IV_LENGTH_BYTES, secCookie.length - IV_LENGTH_BYTES);
+			} catch (Exception exc) {
+				suppressedExceptions.add(exc);
+			}
+		}
+		if (result == null) {
+			final @NonNull WrongSecureCookieException exception = new WrongSecureCookieException(
+					"Unable to decrypt secure cookie");
+			suppressedExceptions.forEach(exception::addSuppressed);
+			throw exception;
+		}
+		return result;
 	}
 
 }
