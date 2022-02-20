@@ -1,10 +1,15 @@
 plugins {
 	id 'java-library'
-	id 'maven-publish'
+	id 'maven'
+	id 'signing'
 	id 'net.researchgate.release' version '2.8.1'
 }
 
 group 'io.github.vlsergey'
+archivesBaseName = "seccookie"
+
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 ext {
 	lombokVersion = '1.18.22'
@@ -21,6 +26,11 @@ compileJava {
 	options.compilerArgs << '-parameters'
 	options.debugOptions.debugLevel = "source,lines,vars"
 	options.encoding = 'UTF-8'
+}
+
+java {
+	withJavadocJar()
+	withSourcesJar()
 }
 
 compileTestJava {
@@ -95,20 +105,58 @@ release {
 	pushReleaseVersionBranch = false
 }
 
-publishing {
-	publications {
-		myLibrary(MavenPublication) {
-			from components.java
-		}
-	}
+artifacts {
+	archives javadocJar, sourcesJar
+}
 
+signing {
+	required { hasProperty('signing.keyId') }
+	sign configurations.archives
+}
+
+afterReleaseBuild.dependsOn uploadArchives
+
+uploadArchives {
 	repositories {
-		maven {
-			name = "GitHubPackages"
-			url = "https://maven.pkg.github.com/vlsergey/spring-data-entity-security"
-			credentials {
-				username = System.getenv("GITHUB_ACTOR")
-				password = System.getenv("GITHUB_TOKEN")
+		mavenDeployer {
+			beforeDeployment { MavenDeployment deployment ->
+				signing.signPom(deployment)
+			}
+
+			repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+				authentication(userName: ossrhUsername, password: ossrhPassword)
+			}
+
+			snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+				authentication(userName: ossrhUsername, password: ossrhPassword)
+			}
+
+			pom.project {
+				name 'Secure Cookie Library'
+				packaging 'jar'
+				description 'Java library for security cookies, client-side pieces of data protected from reading and modifications by client with strong cryptography'
+				url 'https://github.com/vlsergey/seccookie'
+
+				scm {
+					connection 'scm:git:https://github.com/vlsergey/seccookie.git'
+					developerConnection 'scm:svn:https://github.com/vlsergey/seccookie.git'
+					url 'https://github.com/vlsergey/seccookie'
+				}
+
+				licenses {
+					license {
+						name 'MIT License'
+						url 'https://github.com/vlsergey/seccookie/blob/master/LICENSE'
+					}
+				}
+
+				developers {
+					developer {
+						id 'vlsergey'
+						name 'Sergey Vladimirov'
+						email 'vlsergey@gmail.com'
+					}
+				}
 			}
 		}
 	}

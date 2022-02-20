@@ -8,6 +8,26 @@ Java library for security cookies, client-side pieces of data protected from rea
 [![Build with Gradle](https://github.com/vlsergey/seccookie/actions/workflows/build.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/build.yml)
 [![CodeQL](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml)
 
+## Installation
+
+### Gradle
+
+```groovy
+dependencies {
+  implementation group: 'com.github.vlsergey', name: 'seccookie', version: '${version}'
+}
+```
+
+### Maven
+
+```xml
+  <dependency>
+    <groupId>com.github.vlsergey</groupId>
+    <artifactId>seccookie</artifactId>
+    <version>${version}</version>
+  </dependency>
+```
+
 ## Simple usage (`SimpleSecCookieMapper`)
 ```java
 

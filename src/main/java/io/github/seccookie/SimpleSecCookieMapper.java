@@ -27,13 +27,13 @@ import lombok.SneakyThrows;
  * 
  * Result structure:
  * <ul>
- * <li>{@link SimpleSecCookieMapper.IV_LENGTH_BYTES} bytes for initialization
- * vector (IV)
- * <li>Cipher text, including {@link Settings#getGcmTagLength()} bytes for auth
- * tag at the end.
+ * <li>12 bytes for initialization vector (IV)
+ * <li>Cipher text, including <code>Settings.getGcmTagLengthBits() / 8</code>
+ * bytes for auth tag at the end.
  * </ul>
  *
- * @param <T>
+ * @param <T> user data class. The one used by serializer and produced by
+ *            deserializer.
  */
 public class SimpleSecCookieMapper<T> extends AbstractSecCookieMapper<T> {
 
