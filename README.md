@@ -5,6 +5,8 @@ Java library for security cookies, client-side pieces of data protected from rea
 * Uses strong encryption ([AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) with [GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)) to encrypt, decipher and validate data.
 * Has no runtime dependencies, plain JDK is enough.
 
+Short explanation of idea of secure cookie usage was presented at JPoint 2020 conference in "Cryptography for Java Developer" presentation that can be viewed (in Russian) here: https://youtu.be/YQEb1mjjpZg?t=1279
+
 [![Build with Gradle](https://github.com/vlsergey/seccookie/actions/workflows/build.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/build.yml)
 [![CodeQL](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml)
 
