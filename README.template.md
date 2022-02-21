@@ -9,6 +9,7 @@ Short explanation of idea of secure cookie usage was presented at JPoint 2020 co
 
 [![Build with Gradle](https://github.com/vlsergey/seccookie/actions/workflows/build.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/build.yml)
 [![CodeQL](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/vlsergey/seccookie/actions/workflows/codeql-analysis.yml)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.vlsergey/seccookie/badge.svg)](https://search.maven.org/artifact/io.github.vlsergey/seccookie)
 
 ## Installation
 
